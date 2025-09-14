@@ -1,5 +1,5 @@
 /// <summary> Resource File Reader </summary>
-/// <remarks> Version: 2.1 2025-09-15 <br/> Copyright 2025 himitsu @ geheimniswelten <br/> License: MPL v1.1 , GPL v3.0 or LGPL v3.0 </remarks>
+/// <remarks> Version: 2.0 2025-09-14 <br/> Copyright 2025 himitsu @ geheimniswelten <br/> License: MPL v1.1 , GPL v3.0 or LGPL v3.0 </remarks>
 /// <seealso cref="http://geheimniswelten.de"> Geheimniswelten </seealso>
 /// <seealso cref="http://geheimniswelten.de/kontakt/#licenses"> License Text </seealso>
 /// <seealso cref="https://github.com/geheimniswelten/h5uSingleCollection"> GitHub </seealso>
@@ -37,11 +37,6 @@ type
       class operator Implicit(const Value: Integer):   TTypeOrID; inline;
       class operator Implicit(const Value: string):    TTypeOrID; inline;
       class operator Implicit(const Value: PChar):     TTypeOrID; inline;
-      class operator NotEqual(const Left, Right: TTypeOrID):                Boolean; inline;
-      class operator Equal   (const Left, Right: TTypeOrID):                Boolean; inline;
-      class operator Equal   (const Left: TTypeOrID; const Right: Integer): Boolean; inline;
-      class operator Equal   (const Left: TTypeOrID; const Right: string):  Boolean;
-      class operator Equal   (const Left: TTypeOrID; const Right: PChar):   Boolean;
     end;
     /// <summary> Resource Identifier as String or Integer </summary>
     /// <remarks> MAKEINTRESOURCE can also be used, but it would be easier to use the Integer directly. </remarks>
@@ -61,11 +56,6 @@ type
       class operator Implicit(const Value: Integer):   TNameOrID; inline;
       class operator Implicit(const Value: string):    TNameOrID; inline;
       class operator Implicit(const Value: PChar):     TNameOrID; inline;
-      class operator NotEqual(const Left, Right: TNameOrID):                Boolean; inline;
-      class operator Equal   (const Left, Right: TNameOrID):                Boolean; inline;
-      class operator Equal   (const Left: TNameOrID; const Right: Integer): Boolean; inline;
-      class operator Equal   (const Left: TNameOrID; const Right: string):  Boolean;
-      class operator Equal   (const Left: TNameOrID; const Right: PChar):   Boolean;
     end;
     /// <summary> Language ID, as in MAKELANGID, or as a string like "en-US" </summary>
     TLangID = record
@@ -85,10 +75,6 @@ type
       class function GetLangID(LangName: string):    TLangID; static;
       class operator Implicit(const Value: TLangID): LANGID;  inline;
       class operator Implicit(const Value: LANGID):  TLangID; inline;
-      class operator NotEqual(const Left, Right: TLangID):               Boolean; inline;
-      class operator Equal   (const Left, Right: TLangID):               Boolean; inline;
-      class operator Equal   (const Left: TLangID; const Right: LANGID): Boolean; inline;
-      class operator Equal   (const Left: TLangID; const Right: string): Boolean; inline;
     end;
     TResVersion = record
       case Integer of
@@ -110,12 +96,6 @@ type
       property VerStr:  string read GetStr      write SetStr;
       class operator Implicit(const Value: TVersion): DWORD; inline;
       class operator Implicit(const Value: DWORD): TVersion; inline;
-      class operator NotEqual          (const Left, Right: TVersion): Boolean; inline;
-      class operator Equal             (const Left, Right: TVersion): Boolean; inline;
-      class operator GreaterThan       (const Left, Right: TVersion): Boolean; inline;
-      class operator GreaterThanOrEqual(const Left, Right: TVersion): Boolean; inline;
-      class operator LessThan          (const Left, Right: TVersion): Boolean; inline;
-      class operator LessThanOrEqual   (const Left, Right: TVersion): Boolean; inline;
     end;
     TCharacteristics = DWORD;
     TResource = record
@@ -227,33 +207,6 @@ implementation
 
 { TResFile.TTypeOrID }
 
-class operator TResFile.TTypeOrID.Equal(const Left: TTypeOrID; const Right: Integer): Boolean;
-begin
-  Result := Left.isID and (Left.ID = Right);
-end;
-
-class operator TResFile.TTypeOrID.Equal(const Left: TTypeOrID; const Right: string): Boolean;
-begin
-  if StartsStr('#', Right) then
-    Result := Left.isID and (Left.ID = StrToIntDef(Right.Substring(1), -1))
-  else
-    Result := Left.FName = Right;
-end;
-
-class operator TResFile.TTypeOrID.Equal(const Left: TTypeOrID; const Right: PChar): Boolean;
-begin
-  if UIntPtr(Right) <= MAXWORD then
-    Result := Left.isID and (Left.ID = IntPtr(Right))
-  else
-    Result := (MatchText(Right, TResFile.cDataTypes) and (Right <> ''))
-           or (Left.FName = Right);
-end;
-
-class operator TResFile.TTypeOrID.Equal(const Left, Right: TTypeOrID): Boolean;
-begin
-  Result := Left.FName = Right.FName;
-end;
-
 function TResFile.TTypeOrID.GetID: Integer;
 begin
   if not StartsStr('#', FName) then begin
@@ -307,11 +260,6 @@ begin
     Result := (FName <> '') and MatchText(FName, TResFile.cDataTypes);
 end;
 
-class operator TResFile.TTypeOrID.NotEqual(const Left, Right: TTypeOrID): Boolean;
-begin
-  Result := Left.FName <> Right.FName;
-end;
-
 procedure TResFile.TTypeOrID.SetID(Value: Integer);
 begin
   if (Value >= 0) and (Value <= Ord(High(TResFile.cDataTypes))) and (TResFile.cDataTypes[Char(Value)] <> '') then
@@ -342,32 +290,6 @@ begin
 end;
 
 { TResFile.TNameOrID }
-
-class operator TResFile.TNameOrID.Equal(const Left: TNameOrID; const Right: Integer): Boolean;
-begin
-  Result := Left.isID and (Left.ID = Right);
-end;
-
-class operator TResFile.TNameOrID.Equal(const Left: TNameOrID; const Right: string): Boolean;
-begin
-  if StartsStr('#', Right) then
-    Result := Left.isID and (Left.ID = StrToIntDef(Right.Substring(1), -1))
-  else
-    Result := Left.FName = Right;
-end;
-
-class operator TResFile.TNameOrID.Equal(const Left: TNameOrID; const Right: PChar): Boolean;
-begin
-  if UIntPtr(Right) <= MAXWORD then
-    Result := Left.isID and (Left.ID = IntPtr(Right))
-  else
-    Result := Left.FName = Right;
-end;
-
-class operator TResFile.TNameOrID.Equal(const Left, Right: TNameOrID): Boolean;
-begin
-  Result := Left.FName = Right.FName;
-end;
 
 function TResFile.TNameOrID.GetID: Integer;
 begin
@@ -420,11 +342,6 @@ begin
   Result := StartsStr('#', FName) and Integer.TryParse(FName.Substring(1), Index);
 end;
 
-class operator TResFile.TNameOrID.NotEqual(const Left, Right: TNameOrID): Boolean;
-begin
-  Result := Left.FName <> Right.FName;
-end;
-
 procedure TResFile.TNameOrID.SetID(Value: Integer);
 begin
   FName := '#' + Value.ToString;
@@ -436,21 +353,6 @@ begin
 end;
 
 { TResFile.TLangID }
-
-class operator TResFile.TLangID.Equal(const Left: TLangID; const Right: LANGID): Boolean;
-begin
-  Result := Left.FLangID = Right;
-end;
-
-class operator TResFile.TLangID.Equal(const Left: TLangID; const Right: string): Boolean;
-begin
-  Result := SameText(Left.Language, Right);
-end;
-
-class operator TResFile.TLangID.Equal(const Left, Right: TLangID): Boolean;
-begin
-  Result := Left.FLangID = Right.FLangID;
-end;
 
 class function TResFile.TLangID.GetDefaultLangID: TLangID;
 begin
@@ -494,11 +396,6 @@ begin
   Result := Value.FLangID;
 end;
 
-class operator TResFile.TLangID.NotEqual(const Left, Right: TLangID): Boolean;
-begin
-  Result := Left.FLangID <> Right.FLangID;
-end;
-
 procedure TResFile.TLangID.SetLang(idx: Integer; Value: Word);
 begin
   case idx of
@@ -519,11 +416,6 @@ end;
 
 { TResFile.TVersion }
 
-class operator TResFile.TVersion.Equal(const Left, Right: TVersion): Boolean;
-begin
-  Result := Left.FData.Raw = Right.FData.Raw;
-end;
-
 function TResFile.TVersion.GetStr: string;
 begin
   Result := Format('%.2d.%.2d', [Major, Minor]);
@@ -534,34 +426,9 @@ begin
   Result := Major + (Min(Minor, 99) / 100)
 end;
 
-class operator TResFile.TVersion.GreaterThan(const Left, Right: TVersion): Boolean;
-begin
-  Result := Left.FData.Raw > Right.FData.Raw;
-end;
-
-class operator TResFile.TVersion.GreaterThanOrEqual(const Left, Right: TVersion): Boolean;
-begin
-  Result := Left.FData.Raw >= Right.FData.Raw;
-end;
-
 class operator TResFile.TVersion.Implicit(const Value: DWORD): TVersion;
 begin
   Result.Raw := Value;
-end;
-
-class operator TResFile.TVersion.LessThan(const Left, Right: TVersion): Boolean;
-begin
-  Result := Left.FData.Raw < Right.FData.Raw;
-end;
-
-class operator TResFile.TVersion.LessThanOrEqual(const Left, Right: TVersion): Boolean;
-begin
-  Result := Left.FData.Raw <= Right.FData.Raw;
-end;
-
-class operator TResFile.TVersion.NotEqual(const Left, Right: TVersion): Boolean;
-begin
-  Result := Left.FData.Raw <> Right.FData.Raw;
 end;
 
 class operator TResFile.TVersion.Implicit(const Value: TVersion): DWORD;
